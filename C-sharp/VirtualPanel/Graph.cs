@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace VirtualPanel
 {
-    public static class ExtensionMethods
+    static class ExtensionMethods
     {
         public static float Map(this float val, Range from, Range to)
         {
