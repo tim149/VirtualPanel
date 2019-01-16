@@ -17,8 +17,7 @@ namespace VirtualPanel
         StaticDisplay,   // StaticDisplay
         DynamicDisplay,  // DynamicDisplay
         UnixTime,        // UnixTime
-        PanelColor,      // Panel
-        Pling,           // Pling
+        Beep,           // Pling
         //
         Button_1,  // Button_1
         Button_2,  // Button_2
@@ -42,11 +41,13 @@ namespace VirtualPanel
         ScrollBar_2, // ScrollBar_2
         ScrollBar_3, // ScrollBar_3
         ScrollBar_4, // ScrollBar_4
+        ScrollBar_5, // ScrollBar_5
         //
         MaxScrollBar_1, // MaxScrollBar_1
         MaxScrollBar_2, // MaxScrollBar_2
         MaxScrollBar_3, // MaxScrollBar_3
         MaxScrollBar_4, // MaxScrollBar_4
+        MaxScrollBar_5, // MaxScrollBar_5
         //
         Led_1,   // Led_1
         Led_2,   // Led_2
@@ -67,6 +68,18 @@ namespace VirtualPanel
         Display_3, // Display 3
         Display_4, // Display 4
         //
+        PanelInput_1, //
+        PanelInput_2, //
+        //
+        MinPanelInput_1, //
+        MinPanelInput_2, //
+        //
+        MaxPanelInput_1, //
+        MaxPanelInput_2, //
+        //
+        PanelInputLabel_1, //
+        PanelInputLabel_2, //
+        //
         Monitor,        // Monitor
         MonitorField_1, // MonitorField_1
         MonitorField_2, // MonitorField_2
@@ -74,12 +87,38 @@ namespace VirtualPanel
         MonitorField_4, // MonitorField_4
         MonitorField_5, // MonitorField_5
         MonitorField_6, // MonitorField_6
-        //
         MonitorScrollBox,  // StatMonitor
+        //
+        MonitorInput_1, //
+        MonitorInput_2, //
+        MonitorInput_3, //
+        MonitorInput_4, //
+        MonitorInput_5, //
+        MonitorInput_6, //
+        //
+        MinMonitorInput_1, //
+        MinMonitorInput_2, //
+        MinMonitorInput_3, //
+        MinMonitorInput_4, //
+        MinMonitorInput_5, //
+        MinMonitorInput_6, //
+        //
+        MaxMonitorInput_1, //
+        MaxMonitorInput_2, //
+        MaxMonitorInput_3, //
+        MaxMonitorInput_4, //
+        MaxMonitorInput_5, //
+        MaxMonitorInput_6, //
+        //
+        MonitorInputLabel_1, //
+        MonitorInputLabel_2, //
+        MonitorInputLabel_3, //
+        MonitorInputLabel_4, //
+        MonitorInputLabel_5, //
+        MonitorInputLabel_6, //
         //
         Graph, // false/true, byte (1(draw), 2(stat), 3(run)
         GraphGrid, // byte number of segments
-        GraphSampleCount, // byte 
         GraphPen, // $FINE, $THICK, $RED, $GREEN, $YELLOW, $ORANGE, $WHITE, $BLUE 
         GraphDrawLine, // ULong 4x byte (Fx,Fy,Tx,Ty) UInt 2 x byte (X,Y)
         GraphDrawPixel, // UInt 2 x byte (X,Y)
@@ -89,7 +128,13 @@ namespace VirtualPanel
         GraphValue_2, // byte 
         GraphValue_3, // byte 
         GraphValue_4, // byte 
-        GraphValue_5, // byte 
+        GraphValue_5, // byte
+        //
+        GraphValueCount_1, // int
+        GraphValueCount_2, // int
+        GraphValueCount_3, // int 
+        GraphValueCount_4, // int  
+        GraphValueCount_5, // int 
         //
         GraphCaption_1, //
         GraphCaption_2, //
@@ -103,7 +148,15 @@ namespace VirtualPanel
         GraphButton_1, //
         GraphButton_2, //
         GraphButton_3, //
-        GraphButton_4  //
+        GraphButton_4,  //
+        //
+        GraphClick, //
+        GraphDoubleClick, //
+        GraphRightClick, //
+        //
+        Info,
+        InfoLabel,
+        InfoText
         //
     }
 
@@ -112,11 +165,22 @@ namespace VirtualPanel
         private MsgLogForm settings;
         private MonitorForm stats;
         private GraphForm graph;
+        private InfoForm info;
         private ArduinoPort port;
         private List<Tuple<ChannelId, Control>> pannelControlList;
         public static Boolean StaticDisplay = false;
         int MsgNum = 0;
+        private vp_type PanelInputType_1 = vp_type.vp_int;
+        private vp_type PanelInputType_2 = vp_type.vp_int;
 
+        private bool PanelInput_1 = false;
+        private bool PanelInput_2 = false;
+
+        private long MinPanelInput_1 = -2147483648;
+        private long MinPanelInput_2 = -2147483648;
+
+        private long MaxPanelInput_1 = 2147483647;
+        private long MaxPanelInput_2 = 2147483647;
 
         public VirtualPanelForm()
         {
@@ -163,8 +227,9 @@ namespace VirtualPanel
             pannelControlList.Add(new Tuple<ChannelId, Control>(ChannelId.ScrollBar_2, ScrollBar2));
             pannelControlList.Add(new Tuple<ChannelId, Control>(ChannelId.ScrollBar_3, ScrollBar3));
             pannelControlList.Add(new Tuple<ChannelId, Control>(ChannelId.ScrollBar_4, ScrollBar4));
+            pannelControlList.Add(new Tuple<ChannelId, Control>(ChannelId.ScrollBar_5, ScrollBar5));
 
-            port = new ArduinoPort("[PANEL01V01]");
+            port = new ArduinoPort("[VirtualPanel]");
 
             stats = new MonitorForm(port);
             stats.Show();
@@ -178,12 +243,18 @@ namespace VirtualPanel
             graph.Show();
             graph.Visible = false;
 
+            info = new InfoForm(port);
+            info.Show();
+            info.Visible = false;
+
             Panel_Reset();
             panel1.Visible = false;
 
             port.Connected += Port_Connected;
             port.Disconnected += Port_Disconnected;
             port.MessageReceived += Port_MessageReceived;
+            //port.SearchPortTimeout = TimeSpan.FromSeconds(2);
+            //port.SearchPollFrequency = TimeSpan.FromMilliseconds(100);
             port.Open();
             connected_box.BackColor = Color.DarkGreen;
         }
@@ -210,6 +281,7 @@ namespace VirtualPanel
             scrolllabel2.Visible = false;
             scrolllabel3.Visible = false;
             scrolllabel4.Visible = false;
+            scrolllabel5.Visible = false;
 
 
             ApplicationTitle.ForeColor = Color.White;
@@ -238,6 +310,13 @@ namespace VirtualPanel
             timer1.Enabled = false;
             timer1.Interval = 500;
             panel1.Visible = true;
+
+            PanelInput_1 = false;
+            PanelInput_2 = false;
+            MinPanelInput_1 = -2147483648;
+            MinPanelInput_2 = -2147483648;
+            MaxPanelInput_1 = 2147483647;
+            MaxPanelInput_2 = 2147483647;
 
             if (port.IsConnected) port.Send((byte)ChannelId.PanelConnected);
             if (port.IsConnected) port.Send((byte)ChannelId.StaticDisplay);
@@ -279,7 +358,16 @@ namespace VirtualPanel
                     timer1.Enabled = true;
                 }
 
-                if (id == ChannelId.Pling) SystemSounds.Asterisk.Play();
+                if (id == ChannelId.Beep && mse.Type == vp_type.vp_void) System.Console.Beep(500, 400);
+                if (id == ChannelId.Beep && mse.Type == vp_type.vp_int) System.Console.Beep((int)mse.Data, 400);
+                if (id == ChannelId.Beep && mse.Type == vp_type.vp_ulong)
+                {
+                   Int64 Data = (Int64)mse.Data;
+
+                   int Frequency = (int)(Data >> 16);
+                   int Duration = (int)(Data & 0x0000FFFF);
+                   System.Console.Beep(Frequency, Duration);
+                }
 
                 if (id == ChannelId.Monitor && mse.Type == vp_type.vp_boolean)
                 {
@@ -293,11 +381,51 @@ namespace VirtualPanel
                     graph.Visible = (bool)mse.Data;
                 }
 
+                if (id == ChannelId.Info && mse.Type == vp_type.vp_boolean)
+                {
+                    info.Location = new Point(Location.X + Width, Location.Y);
+                    info.Visible = (bool)mse.Data;
+                }
+
                 if (id == ChannelId.Reset) Panel_Reset();
                 if (id == ChannelId.MaxScrollBar_1 && mse.Type == vp_type.vp_int) ScrollBar1.Maximum = (int)mse.Data + 9;
                 if (id == ChannelId.MaxScrollBar_2 && mse.Type == vp_type.vp_int) ScrollBar2.Maximum = (int)mse.Data + 9;
                 if (id == ChannelId.MaxScrollBar_3 && mse.Type == vp_type.vp_int) ScrollBar3.Maximum = (int)mse.Data + 9;
                 if (id == ChannelId.MaxScrollBar_4 && mse.Type == vp_type.vp_int) ScrollBar4.Maximum = (int)mse.Data + 9;
+                if (id == ChannelId.MaxScrollBar_5 && mse.Type == vp_type.vp_int) ScrollBar5.Maximum = (int)mse.Data + 9;
+
+                if ((ChannelId)mse.ChannelID == ChannelId.PanelInput_1 && mse.Type == vp_type.vp_boolean) PanelInput_1 = (bool)mse.Data;
+                if ((ChannelId)mse.ChannelID == ChannelId.PanelInput_1 && mse.Type == vp_type.vp_boolean) PanelInput_2 = (bool)mse.Data;
+
+                if ((ChannelId)mse.ChannelID == ChannelId.PanelInputLabel_1 && mse.Type == vp_type.vp_string) PanelInputLabel_1.Text = mse.Data.ToString();
+                if ((ChannelId)mse.ChannelID == ChannelId.PanelInputLabel_2 && mse.Type == vp_type.vp_string) PanelInputLabel_2.Text = mse.Data.ToString();
+
+                if ((ChannelId)mse.ChannelID == ChannelId.MinPanelInput_1 && mse.Type == vp_type.vp_int) MinPanelInput_1 = (int)mse.Data;
+                if ((ChannelId)mse.ChannelID == ChannelId.MinPanelInput_2 && mse.Type == vp_type.vp_int) MinPanelInput_2 = (int)mse.Data;
+
+                if ((ChannelId)mse.ChannelID == ChannelId.MaxPanelInput_1 && mse.Type == vp_type.vp_int) MaxPanelInput_1 = (int)mse.Data;
+                if ((ChannelId)mse.ChannelID == ChannelId.MaxPanelInput_2 && mse.Type == vp_type.vp_int) MaxPanelInput_2 = (int)mse.Data;
+
+                if ((ChannelId)mse.ChannelID == ChannelId.PanelInput_1)
+                {
+                    PanelInputType_1 = mse.Type;
+                    if (PanelInputType_1 != vp_type.vp_void && PanelInputType_1 != vp_type.vp_boolean)
+                    {
+                        PanelInputPanel_1.Visible = true;
+                        PanelInputPanel_1.BringToFront();
+                        PanelInputTextBox_1.Text = mse.Data.ToString();
+                    }
+                }
+                if ((ChannelId)mse.ChannelID == ChannelId.PanelInput_2)
+                {
+                    PanelInputType_2 = mse.Type;
+                    if (PanelInputType_2 != vp_type.vp_void && PanelInputType_2 != vp_type.vp_boolean)
+                    {
+                        PanelInputPanel_2.Visible = true;
+                        PanelInputPanel_2.BringToFront();
+                        PanelInputTextBox_2.Text = mse.Data.ToString();
+                    }
+                }
             }
         }
 
@@ -307,6 +435,34 @@ namespace VirtualPanel
             if (control is PictureBox) SetLedAppearance((PictureBox)control, mse);
             if (control is Label) SetDisplayAppearance((Label)control, mse);
             if (control is VScrollBar) SetScrollBarAppearance((VScrollBar)control, mse);
+            if (control == ScrollBar5)
+            {
+                if (mse.Type == vp_type.vp_boolean && (bool)mse.Data == false)
+                {
+                    ScrollBar5.Visible = false;
+
+                    scrolllabel5.Visible = false;
+                }
+                else
+                {
+                    ScrollBar5.Visible = true;
+                    if (mse.Type == vp_type.vp_string)
+                    {
+                        scrolllabel5.Visible = true;
+                        scrolllabel5.Text = (string)mse.Data;
+                        button5.Visible = false;
+                        button6.Visible = false;
+                        button7.Visible = false;
+                    }
+                    if (mse.Type == vp_type.vp_int)
+                    {
+                        if ((int)mse.Data <= (ScrollBar5.Maximum) && (int)mse.Data >= 0)
+                            ScrollBar5.Value = (int)mse.Data;
+                    }
+
+                }
+
+            }
         }
 
         public static Color String2Color(string ColorString)
@@ -488,7 +644,7 @@ namespace VirtualPanel
                 if (scrollBar.Name == "ScrollBar2") scrolllabel2.Visible = false;
                 if (scrollBar.Name == "ScrollBar3") scrolllabel3.Visible = false;
                 if (scrollBar.Name == "ScrollBar4") scrolllabel4.Visible = false;
-            }
+             }
             else
             {
                 scrollBar.Visible = true;
@@ -654,6 +810,190 @@ namespace VirtualPanel
         private void resetArduinoToolStripMenuItem_Click(object sender, EventArgs e)
         {
             port.Reset();
+        }
+
+        private void display_Click(object sender, EventArgs e)
+        {
+            if (sender == display1) if (port.IsConnected) port.Send((byte)ChannelId.Display_1);
+            if (sender == display2) if (port.IsConnected) port.Send((byte)ChannelId.Display_2);
+            if (sender == display3) if (port.IsConnected) port.Send((byte)ChannelId.Display_3);
+            if (sender == display4) if (port.IsConnected) port.Send((byte)ChannelId.Display_4);
+
+        }
+
+        private void PanelInputTextBox_TextChange(object sender, EventArgs e)
+        {
+
+            long MinInput = 0;
+            long MaxInput = 0;
+
+            byte InputValueByte = 0;
+            short InputValueShort = 0;
+            ushort InputValueUShort = 0;
+            int InputValueLong = 0;
+            uint InputValueULong = 0;
+
+            bool ValueValid = false;
+
+            TextBox TextBox = (TextBox)sender;
+            vp_type InputType = vp_type.vp_int;
+
+            if (sender == PanelInputTextBox_1) { InputType = PanelInputType_1; MinInput = MinPanelInput_1; MaxInput = MaxPanelInput_1; }
+            if (sender == PanelInputTextBox_2) { InputType = PanelInputType_1; MinInput = MinPanelInput_1; MaxInput = MaxPanelInput_1; }
+
+
+            if (InputType == vp_type.vp_byte && byte.TryParse(TextBox.Text, out InputValueByte))
+            {
+                if (InputValueByte >= MinInput && InputValueByte <= MaxInput)
+                {
+                    TextBox.ForeColor = Color.White;
+                    ValueValid = true;
+                }
+            }
+            else if (InputType == vp_type.vp_int && Int16.TryParse(TextBox.Text, out InputValueShort))
+            {
+                if (InputValueShort >= MinInput && InputValueShort <= MaxInput)
+                {
+                    TextBox.ForeColor = Color.White;
+                    ValueValid = true;
+                }
+            }
+            else if (InputType == vp_type.vp_uint && UInt16.TryParse(TextBox.Text, out InputValueUShort))
+            {
+                if (InputValueUShort >= MinInput && InputValueUShort <= MaxInput)
+                {
+                    TextBox.ForeColor = Color.White;
+                    ValueValid = true;
+                }
+            }
+            else if (InputType == vp_type.vp_long && Int32.TryParse(TextBox.Text, out InputValueLong))
+            {
+                if (InputValueLong >= MinInput && InputValueLong <= MaxInput)
+                {
+                    TextBox.ForeColor = Color.White;
+                    ValueValid = true;
+                }
+            }
+            else if (InputType == vp_type.vp_ulong && UInt32.TryParse(TextBox.Text, out InputValueULong))
+            {
+                if (InputValueULong >= MinInput && InputValueULong <= MaxInput)
+                {
+                    TextBox.ForeColor = Color.White;
+                    ValueValid = true;
+                }
+            }
+
+            if (!ValueValid) TextBox.ForeColor = Color.Red;
+        }
+
+        private void PanelSendInput_Click(object sender, EventArgs e)
+        {
+
+            long MinInput = 0;
+            long MaxInput = 0;
+
+            byte InputValueByte = 0;
+            short InputValueShort = 0;
+            ushort InputValueUShort = 0;
+            int InputValueLong = 0;
+            uint InputValueULong = 0;
+            Panel Panel = new Panel();
+            TextBox TextBox = new TextBox();
+            ChannelId PanelInput = ChannelId.PanelInput_1;
+            vp_type PanelInputType = vp_type.vp_int;
+            bool MonInput = false;
+
+            if (sender == PanelSendInput_1)
+            {
+                Panel = PanelInputPanel_1;
+                TextBox = PanelInputTextBox_1;
+                PanelInput = ChannelId.PanelInput_1;
+                PanelInputType = PanelInputType_1;
+                MonInput = PanelInput_1;
+                MinInput = MinPanelInput_1;
+                MaxInput = MaxPanelInput_1;
+            }
+            else if (sender == PanelSendInput_2)
+            {
+                Panel = PanelInputPanel_2;
+                TextBox = PanelInputTextBox_2;
+                PanelInput = ChannelId.PanelInput_2;
+                PanelInputType = PanelInputType_2;
+                MonInput = PanelInput_2;
+                MinInput = MinPanelInput_2;
+                MaxInput = MaxPanelInput_2;
+            }
+
+            if (!MonInput) Panel.Visible = false;
+
+            if ( PanelInputType == vp_type.vp_byte && byte.TryParse(TextBox.Text, out InputValueByte)
+                 && (InputValueByte >= MinInput && InputValueByte <= MaxInput))
+            {
+                if (port.IsConnected) port.Send((byte)PanelInput, vp_type.vp_byte, InputValueByte);
+            }
+            else if ( PanelInputType == vp_type.vp_int && Int16.TryParse(TextBox.Text, out InputValueShort)
+                      && (InputValueShort >= MinInput && InputValueShort <= MaxInput))
+            {
+                    if (port.IsConnected) port.Send((byte)PanelInput, vp_type.vp_int, InputValueShort);
+            }
+            else if ( PanelInputType == vp_type.vp_uint && UInt16.TryParse(TextBox.Text, out InputValueUShort)
+                      && (InputValueUShort >= MinInput && InputValueUShort <= MaxInput))
+            {
+                if (port.IsConnected) port.Send((byte)PanelInput, vp_type.vp_uint, InputValueUShort);
+            }
+            else if ( PanelInputType == vp_type.vp_long && Int32.TryParse(TextBox.Text, out InputValueLong)
+                      && (InputValueLong >= MinInput && InputValueLong <= MaxInput))
+            {
+                if (port.IsConnected) port.Send((byte)PanelInput, vp_type.vp_long, InputValueLong);
+            }
+            else if ( PanelInputType == vp_type.vp_ulong && UInt32.TryParse(TextBox.Text, out InputValueULong)
+                      && (InputValueULong >= MinInput && InputValueULong <= MaxInput))
+            {
+                if (port.IsConnected) port.Send((byte)PanelInput, vp_type.vp_ulong, InputValueULong);
+            }
+            else
+            {
+                TextBox.ForeColor = Color.Red;
+                Panel.Visible = true;
+            }
+        }
+
+        private void PanelDiscardInput_Click(object sender, EventArgs e)
+        {
+            if (sender == PanelDiscardInput_1)
+            {
+                if (!PanelInput_1) PanelInputPanel_1.Visible = false;
+                else if (port.IsConnected) port.Send((byte)ChannelId.PanelInput_1);
+            }
+            if (sender == PanelDiscardInput_2)
+            {
+                if (!PanelInput_2) PanelInputPanel_2.Visible = false;
+                else if (port.IsConnected) port.Send((byte)ChannelId.PanelInput_2);
+            }
+        }
+
+        private void infoToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (info.Visible == true)
+            {
+                info.Visible = false;
+            }
+            else
+            {
+                info.Location = new Point(Location.X + Width, Location.Y);
+                info.Visible = true;
+            }
+        }
+
+        private void ScrollBar5_Scroll(object sender, ScrollEventArgs e)
+        {
+            Tuple<ChannelId, Control> channel = pannelControlList.Find(t => t.Item2 == sender);
+            if (channel != null)
+            {
+                HScrollBar temp = (HScrollBar)channel.Item2;
+                int Value = temp.Value;
+                if (port.IsConnected) port.Send((byte)channel.Item1, vp_type.vp_int, Value);
+            }
         }
     }
 }
