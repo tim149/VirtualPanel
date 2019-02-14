@@ -26,7 +26,7 @@ namespace VirtualPanel
     {
         public float Start;
         public float End;
-
+         
         public float Abs
         {
             get { return End - Start; }
