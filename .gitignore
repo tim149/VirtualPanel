@@ -42,3 +42,4 @@ bin/
 obj/
 .vs/
 /C-sharp/.vs
+/C-sharp/.idea/.idea.VirtualPanel

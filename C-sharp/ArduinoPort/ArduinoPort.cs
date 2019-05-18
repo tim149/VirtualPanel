@@ -310,7 +310,7 @@ namespace ArduinoCom
         // Attached to port receive event (PORT thread)
         private void Port_DataReceived(object sender, SerialDataReceivedEventArgs e)
         {
-            if (!(connected && port.IsOpen))
+            if (!connected || !port.IsOpen)
                 return;
 
             string temp = port.ReadExisting();

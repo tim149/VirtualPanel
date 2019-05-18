@@ -45,6 +45,7 @@
     <Compile Include="CustomEventArgs.cs" />
     <Compile Include="ExtentionMethods.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="LineBuffer.cs" />
     <Compile Include="Type.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
