@@ -11,8 +11,7 @@
 	
 	*/
 
-#ifndef _ARDUINOPORT_h
-#define _ARDUINOPORT_h
+#pragma once
 
 #if defined(ARDUINO) && ARDUINO >= 100
 	#include "arduino.h"
@@ -23,44 +22,41 @@
 #define SENDFBUFFERSIZE 60 // Buffersize for formatted text Sendf
 #define RECEIVEBUFFERSIZE 40 // Buffersize for pannel events
 
-extern "C"
-{
-	typedef void(*PanelCallbackFunction) (int event, int type);
-}
-
 // message content type declaration
-enum vp_type
+enum class vp_type
 {
-	vp_void,
-	vp_string,
-	vp_boolean,
-	vp_byte,
-	vp_int,
-	vp_uint,
-	vp_long,
-	vp_ulong,
-	vp_float,
+	Void,
+	String,
+	Boolean,
+	Byte,
+	Int,
+	Uint,
+	Long,
+	Ulong,
+	Float,
 
-	vp_error 
+	Error 
 };
 
 
 class ArduinoPort
 {
+	using PanelCallbackFunction =  void(*)(int,int);
+
 	public:
 		ArduinoPort(const char* panel_id, PanelCallbackFunction CallBackPointer, HardwareSerial& comport=Serial, long baudrate = 115200);
 		void Send(int channel);
-		void Send(int chanel, bool value);
-		void Send(int chanel, const char* message);
-		void Send(int chanel, const __FlashStringHelper* message);
-		void Send(int chanel, uint8_t value);
-		void Send(int chanel, int16_t value);
-		void Send(int chanel, uint16_t value);
-		void Send(int chanel, int32_t value);
-		void Send(int chanel, uint32_t value);
-		void Send(int chanel, float value);
-		void Sendf(int chanel, const char* message, ...);
-		void Sendf(int chanel, const __FlashStringHelper* message, ...);
+		void Send(int channel, bool value);
+		void Send(int channel, const char* message);
+		void Send(int channel, const __FlashStringHelper* message);
+		void Send(int channel, uint8_t value);
+		void Send(int channel, int16_t value);
+		void Send(int channel, uint16_t value);
+		void Send(int channel, int32_t value);
+		void Send(int channel, uint32_t value);
+		void Send(int channel, float value);
+		void Sendf(int channel, const char* message, ...);
+		void Sendf(int channel, const __FlashStringHelper* message, ...);
 		bool delay(uint16_t delaytime, bool receive = true);
 		void Receive(void);
 		void Init(void);
@@ -81,16 +77,9 @@ class ArduinoPort
 
 		char SerialInpBuf[RECEIVEBUFFERSIZE];
 		int  SerialInpIdx = 0;
-		long _baudrate;
 
-		int  _chanel;
-		int _type;
-		char* _message;
+		long _baudrate;
 		
 		bool IsAllHex(char * hexvalue);
 		uint32_t Hex2Bin(char* hexvalue);
 };
-
-
-#endif
-

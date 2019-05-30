@@ -2,7 +2,7 @@
   ArduinoPort.cpp 
   MIT Licence - Copyright (c) 2019 Jaap Danielse - https://github.com/JaapDanielse/VirtualPanel
 
-  ArduinoPort is a libray to provide a simple, controlled, 
+  ArduinoPort is a libray to provide a simple, controlled, 	va_start(args, message);
 	event communication between an Arduino and a PC based application
 	under C# using the ArduinoPort.dll.
   	
@@ -28,25 +28,25 @@ void ArduinoPort::Init(void)
 	_comport->begin(_baudrate);
 }
 
-void ArduinoPort::Send(int chanel)
+void ArduinoPort::Send(int channel)
 {
 	char buf[4];
-	sprintf(buf, "%02X%1X", chanel, vp_void);
+	sprintf(buf, "%02X%1X", channel, vp_type::Void);
 	_comport->println(buf);
 }
 
-void ArduinoPort::Send(int chanel, bool value)
+void ArduinoPort::Send(int channel, bool value)
 {
 	char buf[5];
-	sprintf(buf, "%02X%1X%1X", chanel, vp_boolean, value);
+	sprintf(buf, "%02X%1X%1X", channel, vp_type::Boolean, value);
 	_comport->println(buf);
 }
 
 #ifndef ARDUINO_ARCH_SAM
-void ArduinoPort::Sendf(int chanel, const __FlashStringHelper* message, ...)
+void ArduinoPort::Sendf(int channel, const __FlashStringHelper* message, ...)
 {
 	char buf[SENDFBUFFERSIZE];
-	sprintf(buf, "%02X%1X", chanel, vp_string);
+	sprintf(buf, "%02X%1X", channel, vp_type::String);
 	_comport->print(buf);
 	
 	va_list args;
@@ -59,10 +59,10 @@ void ArduinoPort::Sendf(int chanel, const __FlashStringHelper* message, ...)
 }
 #endif
 
-void ArduinoPort::Sendf(int chanel, const char* message, ...)
+void ArduinoPort::Sendf(int channel, const char* message, ...)
 {
 	char buf[SENDFBUFFERSIZE];
-	sprintf(buf, "%02X%1X", chanel, vp_string);
+	sprintf(buf, "%02X%1X", channel, vp_type::String);
 	_comport->print(buf);
 	va_list args;
 	va_start(args, message);
@@ -71,61 +71,61 @@ void ArduinoPort::Sendf(int chanel, const char* message, ...)
 	_comport->println(buf);
 }
 
-void ArduinoPort::Send(int chanel, const char* message)
+void ArduinoPort::Send(int channel, const char* message)
 {
 	char buf[4];
-	sprintf(buf, "%02X%1X", chanel, vp_string);
+	sprintf(buf, "%02X%1X", channel, vp_type::String);
 	_comport->print(buf);
 	_comport->println(message);
 }
 
-void ArduinoPort::Send(int chanel, const __FlashStringHelper* message)
+void ArduinoPort::Send(int channel, const __FlashStringHelper* message)
 {
 	char buf[4];
-	sprintf(buf, "%02X%1X", chanel, vp_string);
+	sprintf(buf, "%02X%1X", channel, vp_type::String);
 	_comport->print(buf);
 	_comport->println(message);
 }
 
-void ArduinoPort::Send(int chanel, uint8_t value)
+void ArduinoPort::Send(int channel, uint8_t value)
 {
 	char buf[6];
-	sprintf(buf, "%02X%1X%02X", chanel, vp_byte, value);
+	sprintf(buf, "%02X%1X%02X", channel, vp_type::Byte, value);
 	_comport->println(buf);
 }
 
-void ArduinoPort::Send(int chanel, int16_t value)
+void ArduinoPort::Send(int channel, int16_t value)
 {
 	char buf[8];
-	sprintf(buf, "%02X%1X%04X", chanel, vp_int, value);
+	sprintf(buf, "%02X%1X%04X", channel, vp_type::Int, value);
 	_comport->println(buf);
 }
 
-void ArduinoPort::Send(int chanel, uint16_t value)
+void ArduinoPort::Send(int channel, uint16_t value)
 {
 	char buf[8];
-	sprintf(buf, "%02X%1X%04X", chanel, vp_uint, value);
+	sprintf(buf, "%02X%1X%04X", channel, vp_type::Uint, value);
 	_comport->println(buf);
 }
 
-void ArduinoPort::Send(int chanel, int32_t value)
+void ArduinoPort::Send(int channel, int32_t value)
 {
 	char buf[12];
-	sprintf(buf, "%02X%1X%08lX", chanel, vp_long, value);
+	sprintf(buf, "%02X%1X%08lX", channel, vp_type::Long, value);
 	_comport->println(buf);
 }
 
-void ArduinoPort::Send(int chanel, uint32_t value)
+void ArduinoPort::Send(int channel, uint32_t value)
 {
 	char buf[12];
-	sprintf(buf, "%02X%1X%08lX", chanel, vp_ulong, value);
+	sprintf(buf, "%02X%1X%08lX", channel, vp_type::Ulong, value);
 	_comport->println(buf);
 }
 
-void ArduinoPort::Send(int chanel, float value)
+void ArduinoPort::Send(int channel, float value)
 {
 	char buf[12];
-	sprintf(buf, "%02X%1X", chanel, vp_float);
+	sprintf(buf, "%02X%1X", channel, vp_type::Float);
 	_comport->print(buf);
 	_comport->println(value,4);
 }
@@ -170,50 +170,51 @@ void ArduinoPort::Receive(void)
 			if (!strcmp("ID", SerialInpBuf))
 			{
 				_comport->println(_panel_id);
-   			SerialInpIdx = 0; //discard input
+   				SerialInpIdx = 0; //discard input
 				return;
 			}
 
 			strncpy(buf, SerialInpBuf, 2);
 			buf[2] = 0;
-			_chanel = (int16_t)Hex2Bin(buf);
+			int16_t channel = Hex2Bin(buf);
 
 			strncpy(buf, &SerialInpBuf[2], 1);
 			buf[1] = 0;
-			_type = (int16_t)Hex2Bin(buf);
+			vp_type type = static_cast<vp_type>(Hex2Bin(buf));
 
 			len = strlen(&SerialInpBuf[3]);
 			hex = IsAllHex(&SerialInpBuf[3]) && len <= 8;
 			if (hex)
 				value = Hex2Bin(&SerialInpBuf[3]);
 
-			switch (_type)
+			switch (type)
 			{
-				case vp_void:
+				case vp_type::Void:
 					break;
-				case vp_string:
+				case vp_type::String:
 					vpr_string = &SerialInpBuf[3]; break;
-				case vp_boolean:
+				case vp_type::Boolean:
 					if (hex && len == 1) { if (value == 1) vpr_boolean = true; else vpr_boolean = false;  break; }
-				case vp_byte:
+				case vp_type::Byte:
 					if (hex && len == 2) { vpr_byte = (uint8_t)value; } break;
-				case vp_int:
+				case vp_type::Int:
 					if (hex && len == 4) { vpr_int = (int16_t)value; } break;
-				case vp_uint:
+				case vp_type::Uint:
 					if (hex && len == 4) { vpr_uint = (uint16_t)value; } break;
-				case vp_long:
+				case vp_type::Long:
 					if (hex && len == 8) { vpr_long = (int32_t)value; } break;
-				case vp_ulong:
+				case vp_type::Ulong:
 					if (hex && len == 8) { vpr_ulong = (uint32_t)value; } break;
-				case vp_float:
-  				vpr_float = atof(&SerialInpBuf[3]); break;
+				case vp_type::Float:
+  					vpr_float = atof(&SerialInpBuf[3]); break;
 					
 				default:
-					_type = vp_error;
+					type = vp_type::Error;
 					vpr_string = SerialInpBuf;
+					break;
 			}
 
-			(*_CallBackPointer) (_chanel, _type);
+			_CallBackPointer(channel, static_cast<int>(type));
 
 			SerialInpIdx = 0;
 		}
